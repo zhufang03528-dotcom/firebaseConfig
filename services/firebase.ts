@@ -1,4 +1,4 @@
-import * as firebaseApp from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -16,13 +16,13 @@ if (configStr) {
 
 /**
  * Initialize Firebase app instance or reuse existing one to prevent multi-initialization errors.
- * Using namespaced import (import * as firebaseApp) to bypass potential named export resolution issues 
- * in the build environment while still using the modular SDK pattern.
+ * Using modern modular SDK pattern with named exports.
  */
+// Fix: Use named exports from "firebase/app" directly instead of namespace properties to resolve 'Property does not exist' errors.
 export const app = firebaseConfig 
-  ? (firebaseApp.getApps().length === 0 
-      ? firebaseApp.initializeApp(firebaseConfig) 
-      : firebaseApp.getApp()) 
+  ? (getApps().length === 0 
+      ? initializeApp(firebaseConfig) 
+      : getApp()) 
   : null;
 
 export const auth = app ? getAuth(app) : null;
