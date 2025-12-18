@@ -1,4 +1,3 @@
-
 import { auth, db, isDemoMode } from './firebase';
 import { 
   signInWithEmailAndPassword, 
@@ -10,7 +9,6 @@ import {
   collection, 
   addDoc, 
   updateDoc, 
-  deleteDoc, 
   doc, 
   getDocs, 
   query, 
@@ -24,13 +22,15 @@ const LOCAL_STORAGE_KEY = 'finvue_demo_user';
 export const storageService = {
   // 監聽登入狀態
   subscribeAuth: (callback: (user: User | null) => void) => {
+    // 如果是展示模式或 Firebase 未初始化
     if (isDemoMode || !auth) {
-      // 展示模式：從 LocalStorage 讀取暫存的登入狀態
       const savedUser = localStorage.getItem(LOCAL_STORAGE_KEY);
-      setTimeout(() => {
-        callback(savedUser ? JSON.parse(savedUser) : null);
-      }, 100);
-      return () => {};
+      const user = savedUser ? JSON.parse(savedUser) : null;
+      // 使用 requestAnimationFrame 或 setTimeout 確保在主線程空閒時回傳，模擬異步行為
+      const timeout = setTimeout(() => {
+        callback(user);
+      }, 0);
+      return () => clearTimeout(timeout);
     }
     
     return onAuthStateChanged(auth, (firebaseUser) => {
@@ -48,7 +48,7 @@ export const storageService = {
 
   login: async (email: string, pass: string): Promise<User | null> => {
     if (isDemoMode || !auth) {
-      // 展示模式下的模擬登入
+      // 展示模式下的模擬登入邏輯
       if (email === 'demo@example.com' && pass === 'password123') {
         const demoUser = { id: 'demo-uid', email, displayName: '展示使用者' };
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(demoUser));
@@ -83,7 +83,7 @@ export const storageService = {
   logout: async () => {
     if (isDemoMode) {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
-      window.location.reload(); // 刷新頁面以重置狀態
+      window.location.reload(); 
       return;
     }
     if (auth) await signOut(auth);
