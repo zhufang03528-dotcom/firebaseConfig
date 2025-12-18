@@ -10,6 +10,7 @@ import {
   addDoc, 
   updateDoc, 
   doc, 
+  deleteDoc,
   getDocs, 
   query, 
   where 
@@ -18,15 +19,14 @@ import { User, BankAccount, Transaction } from '../types';
 import { DEFAULT_ACCOUNTS, DEFAULT_TRANSACTIONS } from '../constants';
 
 const LOCAL_STORAGE_KEY = 'finvue_demo_user';
+const ACCOUNTS_KEY = 'finvue_accounts';
+const TRANSACTIONS_KEY = 'finvue_transactions';
 
 export const storageService = {
-  // 監聽登入狀態
   subscribeAuth: (callback: (user: User | null) => void) => {
-    // 如果是展示模式或 Firebase 未初始化
     if (isDemoMode || !auth) {
       const savedUser = localStorage.getItem(LOCAL_STORAGE_KEY);
       const user = savedUser ? JSON.parse(savedUser) : null;
-      // 使用 requestAnimationFrame 或 setTimeout 確保在主線程空閒時回傳，模擬異步行為
       const timeout = setTimeout(() => {
         callback(user);
       }, 0);
@@ -48,7 +48,6 @@ export const storageService = {
 
   login: async (email: string, pass: string): Promise<User | null> => {
     if (isDemoMode || !auth) {
-      // 展示模式下的模擬登入邏輯
       if (email === 'demo@example.com' && pass === 'password123') {
         const demoUser = { id: 'demo-uid', email, displayName: '展示使用者' };
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(demoUser));
@@ -89,10 +88,9 @@ export const storageService = {
     if (auth) await signOut(auth);
   },
 
-  // Bank Accounts
   getAccounts: async (userId: string): Promise<BankAccount[]> => {
     if (isDemoMode || !db) {
-      const saved = localStorage.getItem('finvue_accounts');
+      const saved = localStorage.getItem(ACCOUNTS_KEY);
       return saved ? JSON.parse(saved) : DEFAULT_ACCOUNTS;
     }
     const q = query(collection(db, "accounts"), where("userId", "==", userId));
@@ -102,22 +100,26 @@ export const storageService = {
 
   saveAccount: async (userId: string, account: Partial<BankAccount>, allAccounts?: BankAccount[]) => {
     if (isDemoMode || !db) {
-      if (allAccounts) localStorage.setItem('finvue_accounts', JSON.stringify(allAccounts));
+      if (allAccounts) localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(allAccounts));
       return;
     }
     if (account.id) {
-      const ref = doc(db, "accounts", account.id);
       const { id, ...data } = account;
+      const ref = doc(db, "accounts", id!);
       await updateDoc(ref, { ...data });
     } else {
       await addDoc(collection(db, "accounts"), { ...account, userId });
     }
   },
 
-  // Transactions
+  deleteAccount: async (accountId: string) => {
+    if (isDemoMode || !db) return;
+    await deleteDoc(doc(db, "accounts", accountId));
+  },
+
   getTransactions: async (userId: string): Promise<Transaction[]> => {
     if (isDemoMode || !db) {
-      const saved = localStorage.getItem('finvue_transactions');
+      const saved = localStorage.getItem(TRANSACTIONS_KEY);
       return saved ? JSON.parse(saved) : DEFAULT_TRANSACTIONS;
     }
     const q = query(collection(db, "transactions"), where("userId", "==", userId));
@@ -127,9 +129,14 @@ export const storageService = {
 
   addTransaction: async (userId: string, transaction: Omit<Transaction, 'id'>, allTrans?: Transaction[]) => {
     if (isDemoMode || !db) {
-      if (allTrans) localStorage.setItem('finvue_transactions', JSON.stringify(allTrans));
+      if (allTrans) localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(allTrans));
       return;
     }
     await addDoc(collection(db, "transactions"), { ...transaction, userId });
+  },
+
+  deleteTransaction: async (transactionId: string) => {
+    if (isDemoMode || !db) return;
+    await deleteDoc(doc(db, "transactions", transactionId));
   }
 };

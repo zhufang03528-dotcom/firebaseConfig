@@ -1,8 +1,8 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
+import * as firebaseApp from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Fix: Read Firebase configuration from environment variables defined in Vite
+// Read Firebase configuration from environment variables defined in Vite
 const configStr = process.env.FIREBASE_CONFIG;
 let firebaseConfig = null;
 
@@ -14,8 +14,17 @@ if (configStr) {
   }
 }
 
-// Fix: Initialize Firebase app instance or reuse existing one to prevent multi-initialization errors
-export const app = firebaseConfig ? (getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()) : null;
+/**
+ * Initialize Firebase app instance or reuse existing one to prevent multi-initialization errors.
+ * Using namespaced import (import * as firebaseApp) to bypass potential named export resolution issues 
+ * in the build environment while still using the modular SDK pattern.
+ */
+export const app = firebaseConfig 
+  ? (firebaseApp.getApps().length === 0 
+      ? firebaseApp.initializeApp(firebaseConfig) 
+      : firebaseApp.getApp()) 
+  : null;
+
 export const auth = app ? getAuth(app) : null;
 export const db = app ? getFirestore(app) : null;
 
