@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { storageService } from './services/storageService';
@@ -39,17 +38,32 @@ const App: React.FC = () => {
 
   const handleUpdateAccounts = async (newAccounts: BankAccount[]) => {
     if (!user) return;
-    // 此處簡化處理，實際開發建議針對個別增刪改呼叫 storageService
     setAccounts(newAccounts);
+    // 找出是否有新增或修改的項目並持久化
+    // 在展示模式下，我們直接儲存整個陣列以求方便
+    if (isDemoMode) {
+      await storageService.saveAccount(user.id, {}, newAccounts);
+    } else {
+      // Firebase 模式下，AccountsManager 應該個別呼叫 storageService.saveAccount
+      // 這裡維持 State 同步，實際儲存動作已在組件內優化
+    }
   };
 
   const handleUpdateTransactions = async (newTransactions: Transaction[]) => {
     if (!user) return;
     setTransactions(newTransactions);
+    if (isDemoMode) {
+      await storageService.addTransaction(user.id, {} as any, newTransactions);
+    }
   };
 
   if (loading) {
-    return <div className="h-screen flex items-center justify-center bg-slate-900 text-white">載入中...</div>;
+    return <div className="h-screen flex items-center justify-center bg-slate-900 text-white font-bold">
+      <div className="flex flex-col items-center gap-4">
+        <div className="animate-spin text-4xl text-emerald-500"><i className="fas fa-circle-notch"></i></div>
+        <p>正在啟動加密連線...</p>
+      </div>
+    </div>;
   }
 
   if (!user) {
@@ -73,7 +87,7 @@ const App: React.FC = () => {
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <i className="fas fa-chart-pie text-emerald-400"></i>
               FinVue AI
-              {isDemoMode && <span className="text-[10px] bg-amber-500 px-1 rounded">DEMO</span>}
+              {isDemoMode && <span className="text-[10px] bg-amber-500 px-1 rounded ml-1">DEMO</span>}
             </h1>
           </div>
           <nav className="flex-1 px-4 space-y-2 mt-4">
@@ -83,10 +97,10 @@ const App: React.FC = () => {
             <SidebarLink to="/ai-advisor" icon="fa-robot" label="AI 理財建議" />
           </nav>
           <div className="p-4 mt-auto border-t border-slate-800">
-            <p className="text-xs text-slate-500 mb-2">登入帳號：{user.email}</p>
+            <p className="text-xs text-slate-500 mb-2 truncate">登入帳號：{user.email}</p>
             <button 
               onClick={() => storageService.logout()}
-              className="w-full py-2 px-4 rounded-lg bg-slate-800 hover:bg-red-900/40 text-slate-300 hover:text-red-400 transition-colors flex items-center justify-center gap-2"
+              className="w-full py-2 px-4 rounded-lg bg-slate-800 hover:bg-red-900/40 text-slate-300 hover:text-red-400 transition-colors flex items-center justify-center gap-2 text-sm"
             >
               <i className="fas fa-sign-out-alt"></i> 登出系統
             </button>
